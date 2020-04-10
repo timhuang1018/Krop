@@ -1,10 +1,7 @@
 package com.timhuang.cropimagetest
 
-import android.graphics.Point
-import android.graphics.Rect
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -14,12 +11,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-
     }
 
     fun cropImage(view: View){
-
-        iv_after_crop.setImageBitmap(crop_image_view.getCircularBitmap())
+        iv_after_crop.setImageBitmap(crop_image_view.cropImageOval())
     }
 }

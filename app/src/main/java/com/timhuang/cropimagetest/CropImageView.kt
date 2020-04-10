@@ -370,26 +370,26 @@ class CropImageView @JvmOverloads constructor(
 //        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
 //    }
 
-    open fun cropImageOval():Bitmap?{
-        //get original bitmap
-        val bitmap = drawable.toBitmap(imageW,imageH)
-        Log.d(TAG,"bitmap :${bitmap.byteCount},${bitmap.width},${bitmap.height}")
+//    open fun cropImageOval():Bitmap?{
+//        //get original bitmap
+//        val bitmap = drawable.toBitmap(imageW,imageH)
+//        Log.d(TAG,"bitmap :${bitmap.byteCount},${bitmap.width},${bitmap.height}")
+//
+//        val canvas = Canvas(bitmap)
+//        val paint = Paint()
+//        val rect = Rect(0,0,imageW,imageH)
+//        paint.isAntiAlias = true
+//        canvas.drawARGB(0,0,0,0)
+//        canvas.drawCircle((imageW/2).toFloat(), (imageH/2).toFloat(),(imageW/2).toFloat(),paint)
+//        paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
+//        canvas.drawBitmap(bitmap,rect,rect,paint)
+//        Log.d(TAG,"bitmap :${bitmap.byteCount},${bitmap.width},${bitmap.height}")
+//        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, FileOutputStream("/sdcard/Download/tmp.jpg"))
+//        return bitmap
+//
+//    }
 
-        val canvas = Canvas(bitmap)
-        val paint = Paint()
-        val rect = Rect(0,0,imageW,imageH)
-        paint.isAntiAlias = true
-        canvas.drawARGB(0,0,0,0)
-        canvas.drawCircle((imageW/2).toFloat(), (imageH/2).toFloat(),(imageW/2).toFloat(),paint)
-        paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
-        canvas.drawBitmap(bitmap,rect,rect,paint)
-        Log.d(TAG,"bitmap :${bitmap.byteCount},${bitmap.width},${bitmap.height}")
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, FileOutputStream("/sdcard/Download/tmp.jpg"))
-        return bitmap
-
-    }
-
-    fun getCircularBitmap(): Bitmap? {
+    fun cropImageOval(): Bitmap? {
         val srcBitmap = cropImageRectangle() ?: return null
         // Calculate the circular bitmap width with border
         val squareBitmapWidth = Math.min(srcBitmap.width, srcBitmap.height)
@@ -416,7 +416,8 @@ class CropImageView @JvmOverloads constructor(
         // Calculate the left and top of copied bitmap
         val left = (squareBitmapWidth - srcBitmap.width) / 2.toFloat()
         val top = (squareBitmapWidth - srcBitmap.height) / 2.toFloat()
-        canvas.drawBitmap(srcBitmap, left, top, paint)
+        canvas.drawBitmap(srcBitmap, null, rectF, paint)
+//        canvas.drawBitmap(srcBitmap, left, top, paint)
         // Free the native object associated with this bitmap.
         srcBitmap.recycle()
         // Return the circular bitmap
