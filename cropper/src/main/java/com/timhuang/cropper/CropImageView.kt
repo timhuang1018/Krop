@@ -1,21 +1,21 @@
-package com.timhuang.cropimagetest
+package com.timhuang.cropper
 
 import android.content.Context
 import android.graphics.*
+import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.widget.ImageView
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.toBitmap
-import java.io.FileOutputStream
 import kotlin.math.sqrt
 
 
 class CropImageView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : ImageView(context, attrs, defStyleAttr) {
-
 
     private val TAG = "CropImageView"
     private var mode = NONE
@@ -30,13 +30,10 @@ class CropImageView @JvmOverloads constructor(
     private var topLimit = 0
     private var bottomLimit = 0
 
-
     //indicating crop area setting
-    private val shallowColor = ResourcesCompat.getColor(resources,R.color.black,null)
+    private val shadowColor = ResourcesCompat.getColor(resources, R.color.black_opacity_50,null)
     private lateinit var extraCanvas :Canvas
-    private lateinit var extraBitmap :Bitmap
-
-
+    private lateinit var extraBitmap : Bitmap
 
     //image setting
     private var imageW = 0
@@ -50,33 +47,52 @@ class CropImageView @JvmOverloads constructor(
     private var scaleRateX = 0f
     private var scaleRateY = 0f
 
-
     //for calculating
     var originDistance = 0f
     private var touchX = -1f
     private var touchY = -1f
     val matrixArray = floatArrayOf(0f,0f,0f,0f,0f,0f,0f,0f,0f)
 
+    //display and api setting
+    private var shape = 0
+
+    init {
+        context.theme.obtainStyledAttributes(
+            attrs,
+            R.styleable.CropImageView,
+            0,0
+        ).apply {
+            try {
+                shape = getInteger(R.styleable.CropImageView_cropShape, RECTANGLE)
+            }finally {
+                recycle()
+            }
+        }
+    }
+
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         Log.d(TAG, "onSizeChanged, w:${w}, h:${h} , oldw:$oldw oldh:$oldh")
         init(w,h)
+        drawableSetting()
     }
 
 
     override fun onDraw(canvas: Canvas?) {
-        super.onDraw(canvas)
-        canvas?.drawBitmap(extraBitmap,0f,0f,null)
-//        drawCropArea(canvas)
+        try {
+            super.onDraw(canvas)
+            if (::extraBitmap.isInitialized){
+                canvas?.drawBitmap(extraBitmap,0f,0f,null)
+            }
+        }catch (e:Exception){
+            Log.e(TAG,e.toString())
+        }
     }
 
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (event==null) return false
-
-//        if () return true
-//        scaleDetector.onTouchEvent(event)
 
         when(event.action and event.actionMasked){
             MotionEvent.ACTION_DOWN->{
@@ -101,9 +117,6 @@ class CropImageView @JvmOverloads constructor(
                     val offsetY = event.rawY - event.getY(0)
                     val locationX = event.rawX + dx
                     val locationY = event.rawY + dy
-//                    val locationX = (event.getX(0)+event.getX(1))/2 + viewX
-//                    val locationY = (event.getY(0)+event.getY(1))/2 + viewY
-//                    Log.e(TAG,"dx :$dx, dy:$dy, offsetY = $offsetY, locationX:$locationX, locationY:$locationY,event rawY:${event.rawY}")
 
                     if (viewX <=locationX && locationX <= (viewX+viewW) && viewY<= locationY && locationY<=(viewY+viewH)){
                         mode = SCALE
@@ -111,9 +124,6 @@ class CropImageView @JvmOverloads constructor(
 
                         scaleRateX = (locationX - imageX) / imageW
                         scaleRateY = (locationY - imageY) / imageH
-//                        midX = (event.getX(0)+event.getX(1))/2 + viewX
-//                        midY = (event.getY(0)+event.getY(1))/2 + viewY
-//                        Log.d(TAG,"midX:$midX,midY:$midY")
                     }else{
                         mode = NONE
                     }
@@ -121,6 +131,38 @@ class CropImageView @JvmOverloads constructor(
             }
         }
         return true
+    }
+
+    override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
+//        Log.d(TAG,"dispatchTouchEvent called")
+
+        parent.requestDisallowInterceptTouchEvent(true)
+        return super.dispatchTouchEvent(event)
+    }
+
+
+    override fun setImageBitmap(bm: Bitmap?) {
+        Log.d(TAG,"setImageBitmap called")
+        super.setImageBitmap(bm)
+        drawableSetting()
+    }
+
+    override fun setImageResource(resId: Int) {
+        Log.d(TAG,"setImageResource called")
+        super.setImageResource(resId)
+        drawableSetting()
+    }
+
+    override fun setImageURI(uri: Uri?) {
+        Log.d(TAG,"setImageURI called")
+        super.setImageURI(uri)
+        drawableSetting()
+    }
+
+    override fun setImageDrawable(drawable: Drawable?) {
+        Log.d(TAG,"setImageDrawable called")
+        super.setImageDrawable(drawable)
+        drawableSetting()
     }
 
     private fun motion(event: MotionEvent) {
@@ -131,11 +173,11 @@ class CropImageView @JvmOverloads constructor(
                     val moveX = event.rawX - touchX
                     val moveY = event.rawY - touchY
                     //move pic to right
-//                    Log.d(TAG,"event rawY:${event.rawY}, eventY ${event.getY(0)} imageX:$imageX,w $imageW, right limit :$rightLimit")
 
                     //prevent moving
                     val isValidX = (moveX<0 && imageX+imageW>rightLimit) || (moveX>0 && imageX < leftLimit)
                     val isValidY = (moveY<0 && imageY+imageH>bottomLimit) || (moveY>0 && imageY < topLimit)
+
                     when{
                         isValidX && isValidY-> moveImage(moveX,moveY)
                         isValidX -> moveImage(moveX = moveX)
@@ -149,37 +191,15 @@ class CropImageView @JvmOverloads constructor(
             }
 
             SCALE->{
-
-//                Log.d(TAG,"pointerCount :${event.pointerCount}")
                 if (event.pointerCount==2){
                     val afterDistance = spacing(event)
                     var ratio = afterDistance / originDistance
-//                    val l = (midX - (midX - imageX) * ratio - imageX).toInt()
-//                    val t = (midY - (midY - imageY) * ratio - imageY).toInt()
-//                    val w: Double
-//                    val h: Double
                     val centerX = imageX + imageW * scaleRateX
                     val centerY = imageY + imageH * scaleRateY
                     if (ratio>1 && imageW >=imageMaxW) return
                     if (ratio<1 && imageW <=imageMinW) return
                     scale(ratio,centerX ,centerY)
-//                    when {
-//
-//                        (originW * ratio < imgMinWidth) or (originH * ratio < imgMinHeight) -> {
-//                            w = imgMinWidth.toDouble()
-//                            h = imgMinHeight.toDouble()
-//                        }
-//                        (originW * ratio > imgMaxWidth) or (originH * ratio > imgMaxHeight) -> {
-//                            w = imgMaxWidth.toDouble()
-//                            h = imgMaxHeight.toDouble()
-//                        }
-//                        else -> {
-//                            w = originW * ratio
-//                            h = originH * ratio
-//                        }
-//                    }
-//                    ima
-//                    view.layout(l, t, (l + w).toInt(), (t + h).toInt())
+
                 }
 
             }
@@ -187,7 +207,6 @@ class CropImageView @JvmOverloads constructor(
             NONE->{
                 //maybe some reset
             }
-
         }
     }
 
@@ -203,6 +222,34 @@ class CropImageView @JvmOverloads constructor(
         point.set(x/2,y/2)
     }
 
+    private fun drawableSetting(){
+        if(drawable==null) return
+        Log.d(TAG,"image W :${drawable.intrinsicWidth}, H :${drawable.intrinsicHeight}")
+        Log.d(TAG,"view matrix :$matrix, imageMatrix :$imageMatrix")
+
+        val wRatio = viewW / drawable.intrinsicWidth.toFloat()
+        val hRatio = viewH / drawable.intrinsicHeight.toFloat()
+        if (wRatio>hRatio){
+            imageMatrix = Matrix().apply {
+                postScale(wRatio,wRatio)
+            }
+            imageViewRatio = wRatio
+        }else{
+            imageMatrix = Matrix().apply {
+                postScale(hRatio,hRatio)
+            }
+            imageViewRatio = hRatio
+        }
+        imageX = viewX.toFloat()
+        imageY = viewY.toFloat()
+        imageW = (drawable.intrinsicWidth * imageViewRatio).toInt()
+        imageH = (drawable.intrinsicHeight * imageViewRatio).toInt()
+        imageMinW = imageW
+        imageMinH = imageH
+        imageMaxW = (imageW * 1.3).toInt()
+        imageMaxH = (imageH * 1.3).toInt()
+    }
+
 
     private fun init(w: Int, h: Int) {
         viewW = w
@@ -214,78 +261,41 @@ class CropImageView @JvmOverloads constructor(
         Log.d(TAG, "view location x:${point.x}, y:${point.y}")
         viewX = point.x
         viewY = point.y
-        imageX = point.x.toFloat()
-        imageY = point.y.toFloat()
         leftLimit = point.x
         topLimit = point.y
         rightLimit = point.x + viewW
         bottomLimit = point.y + viewH
-//
-
-//        Log.d(TAG,"image W :${drawable.intrinsicWidth}, H :${drawable.intrinsicHeight}")
-//
-//        Log.d(TAG, "scaleType:${scaleType}, scaleX:${scaleX}, scaleY:${scaleY}")
-//        Log.d(TAG,"view matrix :$matrix, imageMatrix :$imageMatrix")
-
-//        if (drawable.intrinsicWidth < viewW || drawable.intrinsicHeight < viewH){
-
-            val wRatio = viewW / drawable.intrinsicWidth.toFloat()
-            val hRatio = viewH / drawable.intrinsicHeight.toFloat()
-//            Log.d(TAG,"wRatio :$wRatio, hRatio :$hRatio")
-            if (wRatio>hRatio){
-                imageMatrix = Matrix().apply {
-                    postScale(wRatio,wRatio)
-                }
-                imageViewRatio = wRatio
-//                imageMatrix.postScale(wRatio,wRatio)
-            }else{
-                imageMatrix = Matrix().apply {
-                    postScale(hRatio,hRatio)
-                }
-                imageViewRatio = hRatio
-            }
-//        }
-//        Log.d(TAG,"view matrix :$matrix, imageMatrix :$imageMatrix")
-//        imageMatrix.getValues(matrixArray)
-        imageW = (drawable.intrinsicWidth * imageViewRatio).toInt()
-        imageH = (drawable.intrinsicHeight * imageViewRatio).toInt()
-        imageMinW = imageW
-        imageMinH = imageH
-        imageMaxW = (imageW * 1.2).toInt()
-        imageMaxH = (imageH * 1.2).toInt()
-//        if (imageViewRatio<=1f){
-
-//        }else{
-
-//        }
-
-        if (::extraBitmap.isInitialized) extraBitmap.recycle()
         extraBitmap = Bitmap.createBitmap(viewW,viewH,Bitmap.Config.ARGB_8888)
         extraCanvas = Canvas(extraBitmap)
-        drawCropArea(extraCanvas)
+        drawCropArea()
     }
 
-    private fun drawCropArea(canvas: Canvas?) = canvas?.also { canvas ->
-        val rect = Rect(0,0,viewW,viewH)
+    private fun drawCropArea() = run {
+        if (!::extraCanvas.isInitialized) return@run
+        Log.d(TAG,"drawCropArea called")
+        if (shape== OVAL){
+            val rect = Rect(0,0,viewW,viewH)
 
-        val paint = Paint().apply {
-            isAntiAlias = true
-            color = shallowColor
-            alpha = 90
-            style = Paint.Style.FILL
+            val paint = Paint().apply {
+                isAntiAlias = true
+                color = shadowColor
+                alpha = 90
+                style = Paint.Style.FILL
+            }
+            extraCanvas.drawPaint(paint)
+
+            val paint2 = Paint().apply {
+                xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_OUT)
+                color = Color.TRANSPARENT
+
+            }
+            val centerX = viewW/2
+            val centerY = viewH /2
+            val radius = centerX
+
+            extraCanvas.drawCircle(centerX.toFloat(),centerY.toFloat(),radius.toFloat(),paint2)
         }
-        canvas.drawPaint(paint)
 
-        val paint2 = Paint().apply {
-            xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_OUT)
-            color = Color.TRANSPARENT
-
-        }
-        val centerX = viewW/2
-        val centerY = viewH /2
-        val radius = centerX
-
-        canvas.drawCircle(centerX.toFloat(),centerY.toFloat(),radius.toFloat(),paint2)
     }
 
     private fun scale(ratio :Float, focusX: Float, focusY: Float) {
@@ -296,8 +306,6 @@ class CropImageView @JvmOverloads constructor(
 
         imageMatrix = Matrix(imageMatrix).apply {
             postScale(ratio,ratio,focusX,focusY)
-
-//            postTranslate(focusX,focusY)
         }
         imageMatrix.getValues(matrixArray)
         imageW = (imageW * ratio).toInt()
@@ -312,15 +320,12 @@ class CropImageView @JvmOverloads constructor(
         imageMatrix = Matrix(imageMatrix).apply {
             postTranslate(moveX,moveY)
         }
-//        imageMatrix = Matrix(imageMatrix).apply {
-//            postTranslate(0f,moveY)
-//        }
         imageX += moveX
         imageY += moveY
     }
 
 
-    fun cropImageRectangle(): Bitmap? {
+    private fun cropImageRectangle(): Bitmap {
         val bitmap = drawable.toBitmap(imageW,imageH)
         Log.d(TAG,"bitmap :${bitmap.byteCount},${bitmap.width},${bitmap.height}")
 
@@ -340,8 +345,8 @@ class CropImageView @JvmOverloads constructor(
         }
         val cropBitmap = Bitmap.createBitmap(bitmap,x,y,cropW,cropH)
         Log.d(TAG,"cropBitmap :${cropBitmap.byteCount},${cropBitmap.width},${cropBitmap.height}")
-        cropBitmap.compress(Bitmap.CompressFormat.JPEG, 100, FileOutputStream("/sdcard/Download/tmp.jpg"))
-        bitmap.recycle()
+//        cropBitmap.compress(Bitmap.CompressFormat.JPEG, 100, FileOutputStream("/sdcard/Download/tmp.jpg"))
+//        bitmap.recycle()
         return cropBitmap
     }
 
@@ -357,40 +362,8 @@ class CropImageView @JvmOverloads constructor(
 
     }
 
-
-
-//    override fun onDrawForeground(canvas: Canvas?) {
-//        Log.d(TAG,"onDrawForeground called")
-//        super.onDrawForeground(canvas)
-//    }
-//
-//    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-//        Log.d(TAG, "onMeasure, widthMeasureSpec:${widthMeasureSpec}, heightMeasureSpec:${heightMeasureSpec} ")
-//
-//        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-//    }
-
-//    open fun cropImageOval():Bitmap?{
-//        //get original bitmap
-//        val bitmap = drawable.toBitmap(imageW,imageH)
-//        Log.d(TAG,"bitmap :${bitmap.byteCount},${bitmap.width},${bitmap.height}")
-//
-//        val canvas = Canvas(bitmap)
-//        val paint = Paint()
-//        val rect = Rect(0,0,imageW,imageH)
-//        paint.isAntiAlias = true
-//        canvas.drawARGB(0,0,0,0)
-//        canvas.drawCircle((imageW/2).toFloat(), (imageH/2).toFloat(),(imageW/2).toFloat(),paint)
-//        paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
-//        canvas.drawBitmap(bitmap,rect,rect,paint)
-//        Log.d(TAG,"bitmap :${bitmap.byteCount},${bitmap.width},${bitmap.height}")
-//        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, FileOutputStream("/sdcard/Download/tmp.jpg"))
-//        return bitmap
-//
-//    }
-
-    fun cropImageOval(): Bitmap? {
-        val srcBitmap = cropImageRectangle() ?: return null
+    private fun cropImageOval(): Bitmap {
+        val srcBitmap = cropImageRectangle()
         // Calculate the circular bitmap width with border
         val squareBitmapWidth = Math.min(srcBitmap.width, srcBitmap.height)
         // Initialize a new instance of Bitmap
@@ -406,29 +379,36 @@ class CropImageView @JvmOverloads constructor(
         paint.isAntiAlias = true
         val rect = Rect(0, 0, squareBitmapWidth, squareBitmapWidth)
         val rectF = RectF(rect)
-//        val centerX = squareBitmapWidth/2
-//        val centerY = squareBitmapWidth /2
-//        val radius = centerX
 
-//        canvas.drawCircle(centerX.toFloat(),centerY.toFloat(),radius.toFloat(),paint)
         canvas.drawOval(rectF, paint)
         paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
-        // Calculate the left and top of copied bitmap
-        val left = (squareBitmapWidth - srcBitmap.width) / 2.toFloat()
-        val top = (squareBitmapWidth - srcBitmap.height) / 2.toFloat()
+
         canvas.drawBitmap(srcBitmap, null, rectF, paint)
-//        canvas.drawBitmap(srcBitmap, left, top, paint)
-        // Free the native object associated with this bitmap.
         srcBitmap.recycle()
-        // Return the circular bitmap
-        dstBitmap.compress(Bitmap.CompressFormat.JPEG, 100, FileOutputStream("/sdcard/Download/tmp.jpg"))
+
         return dstBitmap
+    }
+
+    fun setShapeOval(boolean: Boolean){
+        if (boolean){
+            shape = OVAL
+            drawCropArea()
+        }
+    }
+
+    fun cropImage():Bitmap{
+        return when(shape){
+            RECTANGLE-> cropImageRectangle()
+            OVAL-> cropImageOval()
+            else -> cropImageRectangle()
+        }
     }
 
     companion object{
         const val NONE = 0
         const val DRAG = 1
         const val SCALE = 2
+        const val RECTANGLE = 0
+        const val OVAL = 1
     }
-
 }

@@ -14,6 +14,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun cropImage(view: View){
-        iv_after_crop.setImageBitmap(crop_image_view.cropImageOval())
+        iv_after_crop.setImageBitmap(crop_image_view.cropImage())
     }
 }
