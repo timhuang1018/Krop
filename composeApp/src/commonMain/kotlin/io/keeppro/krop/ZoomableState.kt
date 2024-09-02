@@ -12,8 +12,11 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.util.VelocityTracker
+import coil3.Image
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Create a [ZoomableState] that is remembered across compositions.
@@ -129,21 +132,6 @@ class ZoomableState(
         }
     }
 
-    private suspend fun fling(velocity: Offset) = coroutineScope {
-        launch {
-            _translateY.animateDecay(
-                velocity.y / 2f,
-                exponentialDecay()
-            )
-        }
-        launch {
-            _translateX.animateDecay(
-                velocity.x / 2f,
-                exponentialDecay()
-            )
-        }
-    }
-
     internal suspend fun drag(dragDistance: Offset) = coroutineScope {
         launch {
             _translateY.snapTo((_translateY.value + dragDistance.y))
@@ -153,11 +141,6 @@ class ZoomableState(
         }
     }
 
-    internal suspend fun dragEnd() {
-        val velocity = velocityTracker.calculateVelocity()
-        fling(Offset(velocity.x, velocity.y))
-    }
-
     internal suspend fun updateBounds(maxX: Float, maxY: Float) = coroutineScope {
         if (maxX.isNaN() || maxY.isNaN()) return@coroutineScope
         _translateY.updateBounds(-maxY, maxY)
@@ -165,6 +148,58 @@ class ZoomableState(
     }
 
     internal suspend fun onZoomChange(zoomChange: Float) = snapScaleTo(scale * zoomChange)
+
+    override fun toString(): String = "ZoomableState(" +
+            "minScale=$minScale, " +
+            "maxScale=$maxScale, " +
+            "translateY=$translateY" +
+            "translateX=$translateX" +
+            "scale=$scale" +
+            ")"
+
+    private val krop = Krop()
+    private var containerWidth = 0
+    private var containerHeight = 0
+    private var childWidth = 0
+    private var childHeight = 0
+    private var startPoint = Offset(0f, 0f)
+    private var cropArea = Offset(0f, 0f) //width and height
+
+    fun updateContainerAndChildSize(
+        maxWidth: Int,
+        maxHeight: Int,
+        childWidth: Int,
+        childHeight: Int
+    ) {
+        containerWidth = maxWidth
+        containerHeight = maxHeight
+        this.childWidth = childWidth
+        this.childHeight = childHeight
+        calculateCropArea()
+    }
+
+    private fun calculateCropArea() {
+        startPoint = Offset(
+            (max(0f, (childWidth * scale - containerWidth) / 2) - translateX).coerceAtLeast(0f),
+            (max(0f, (childHeight * scale - containerHeight) / 2) - translateY).coerceAtLeast(0f)
+        )
+        cropArea = Offset(
+            min(childWidth * scale, containerWidth.toFloat()),
+            min(childHeight * scale, containerHeight.toFloat())
+        )
+    }
+
+    fun crop(): ByteArray {
+        val startX = (startPoint.x / scale).toInt()
+        val startY = (startPoint.y / scale).toInt()
+        val width = (cropArea.x / scale).toInt()
+        val height = (cropArea.y / scale).toInt()
+        return krop.crop(startX, startY, width, height)
+    }
+
+    fun prepareImage(image: Image?) {
+        krop.prepareImage(image)
+    }
 
     internal fun addPosition(timeMillis: Long, position: Offset) {
         velocityTracker.addPosition(timeMillis = timeMillis, position = position)
@@ -206,13 +241,27 @@ class ZoomableState(
         return false
     }
 
-    override fun toString(): String = "ZoomableState(" +
-            "minScale=$minScale, " +
-            "maxScale=$maxScale, " +
-            "translateY=$translateY" +
-            "translateX=$translateX" +
-            "scale=$scale" +
-            ")"
+
+    private suspend fun fling(velocity: Offset) = coroutineScope {
+        launch {
+            _translateY.animateDecay(
+                velocity.y / 2f,
+                exponentialDecay()
+            )
+        }
+        launch {
+            _translateX.animateDecay(
+                velocity.x / 2f,
+                exponentialDecay()
+            )
+        }
+    }
+
+
+    internal suspend fun dragEnd() {
+        val velocity = velocityTracker.calculateVelocity()
+        fling(Offset(velocity.x, velocity.y))
+    }
 
     companion object {
         /**
