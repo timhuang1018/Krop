@@ -6,8 +6,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -36,7 +35,6 @@ import kotlinx.coroutines.launch
  * @param doubleTapScale a function called on double tap gesture, will scale to returned value.
  * @param content a block which describes the content.
  * @param onTap for interaction if need onClicked action
- *
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -44,7 +42,7 @@ fun Zoomable(
     state: ZoomableState,
     modifier: Modifier = Modifier,
     enable: Boolean = true,
-    onTap: () -> Unit = {},
+    onTap: (() -> Unit)? = null,
     doubleTapScale: (() -> Float)? = null,
     cropHint: CropHint? = null,
     content: @Composable BoxScope.() -> Unit,
@@ -77,33 +75,24 @@ fun Zoomable(
             state.updateBounds(maxX, maxY)
         }
 
-        val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
-            scope.launch {
-                state.onZoomChange(zoomChange)
-                val (maxX, maxY) = getBounds(state.scale)
-                state.updateBounds(maxX, maxY)
-            }
-            scope.launch {
-                state.drag(panChange)
-            }
-        }
-        val tapModifier = if (doubleTapScale != null && enable) {
+        val tapModifier = if (enable) {
             Modifier.pointerInput(Unit) {
                 detectTapGestures(
                     onTap = {
-                        onTap()
+                        if (onTap!= null) onTap()
                     },
                     onDoubleTap = { offset ->
+                        if (doubleTapScale != null) {
+                            scope.launch {
+                                val diffX = offset.x - (constraints.maxWidth / 2)
+                                val diffY = offset.y - (constraints.maxHeight / 2)
+                                val dis = Offset(-diffX, -diffY)
 
-                        scope.launch {
-                            val diffX = offset.x - (constraints.maxWidth / 2)
-                            val diffY = offset.y - (constraints.maxHeight / 2)
-                            val dis = Offset(-diffX, -diffY)
-
-                            val afterScale = doubleTapScale()
-                            val (maxX, maxY) = getBounds(afterScale)
-                            state.updateBounds(maxX, maxY)
-                            state.animateDoubleTap(scale = afterScale, distance = dis)
+                                val afterScale = doubleTapScale()
+                                val (maxX, maxY) = getBounds(afterScale)
+                                state.updateBounds(maxX, maxY)
+                                state.animateDoubleTap(scale = afterScale, distance = dis)
+                            }
                         }
                     }
                 )
@@ -111,41 +100,58 @@ fun Zoomable(
         } else {
             Modifier
         }
-        val zoomableModifier: Modifier = Modifier.transformable(
-            state = transformableState,
-            canPan = {  //canPan only allowed when image is zooming, otherwise will let other handle drag
-                state.zooming
+        val zoomableModifier: Modifier = if (enable){
+            Modifier.pointerInput(Unit){
+                detectTransformGestures (panZoomLock = true){ centroid, pan, zoom, _ ->
+                    val newScale = settingScale * zoom
+
+                    val scaleDifference = newScale - settingScale
+                    val adjustedOffset = centroid * scaleDifference
+                    scope.launch {
+                        state.onZoomChange(zoom)
+                        val (maxX, maxY) = getBounds(newScale)
+                        state.updateBounds(maxX, maxY)
+                    }
+
+                    scope.launch {
+                        state.drag(pan - adjustedOffset)
+                    }
+                }
             }
-        )
+        }else{
+            Modifier
+        }
 
         Box(
             modifier = Modifier
                 .then(zoomableModifier)
                 .then(tapModifier)
                 .layout { measurable, constraints ->
-                    val placeable =
-                        measurable.measure(constraints = constraints)
+                    val placeable = measurable.measure(constraints = constraints)
                     childHeight = placeable.height
                     childWidth = placeable.width
+                    state.updateContainerAndChildSize(constraints.maxWidth, constraints.maxHeight, childWidth, childHeight)
                     layout(
                         width = constraints.maxWidth,
                         height = constraints.maxHeight
                     ) {
                         placeable.placeRelativeWithLayer(
                             (constraints.maxWidth - placeable.width) / 2,
-                            (constraints.maxHeight - placeable.height) / 2
-                        ) {
-                            scaleX = settingScale
-                            scaleY = settingScale
-                            translationX = settingTranslationX
-                            translationY = settingTranslationY
-                        }
+                            (constraints.maxHeight - placeable.height) / 2,
+                            layerBlock = {
+                                scaleX = settingScale
+                                scaleY = settingScale
+                                translationX = settingTranslationX
+                                translationY = settingTranslationY
+                            }
+                        )
                     }
                 }
         ) {
             content.invoke(this)
         }
     }
+
 }
 
 class CropHint(
