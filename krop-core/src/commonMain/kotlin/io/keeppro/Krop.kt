@@ -8,7 +8,7 @@ class Krop {
 
     private var image: Image? = null
 
-    fun prepareImage(image: Image?) {
+    fun prepareImage(image: Image) {
         this.image = image
     }
 

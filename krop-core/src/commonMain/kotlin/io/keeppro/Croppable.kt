@@ -33,7 +33,6 @@ import kotlinx.coroutines.launch
  * @param content a block which describes the content.
  * @param onTap for interaction if need onClicked action
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Croppable(
     state: CroppableState,
@@ -56,7 +55,6 @@ fun Croppable(
         modifier
     }.clipToBounds()
     BoxWithConstraints(modifier = boxModifier) {
-
         var childWidth by remember { mutableStateOf(0) }
         var childHeight by remember { mutableStateOf(0) }
         fun getBounds(updateScale: Float): Pair<Float, Float> { //return boundary for translationX,Y
@@ -70,6 +68,7 @@ fun Croppable(
         ) {
             val (maxX, maxY) = getBounds(state.scale)
             state.updateBounds(maxX, maxY)
+            state.updateContainerAndChildSize(constraints.maxWidth, constraints.maxHeight, childWidth, childHeight)
         }
 
         val tapModifier = if (enable) {
@@ -127,7 +126,6 @@ fun Croppable(
                     val placeable = measurable.measure(constraints = constraints)
                     childHeight = placeable.height
                     childWidth = placeable.width
-                    state.updateContainerAndChildSize(constraints.maxWidth, constraints.maxHeight, childWidth, childHeight)
                     layout(
                         width = constraints.maxWidth,
                         height = constraints.maxHeight
@@ -140,6 +138,7 @@ fun Croppable(
                                 scaleY = settingScale
                                 translationX = settingTranslationX
                                 translationY = settingTranslationY
+                                state.calculateCropArea()
                             }
                         )
                     }
