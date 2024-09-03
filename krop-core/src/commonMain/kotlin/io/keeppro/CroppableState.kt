@@ -1,4 +1,4 @@
-package io.keeppro.krop
+package io.keeppro
 
 import androidx.annotation.FloatRange
 import androidx.compose.animation.core.Animatable
@@ -11,7 +11,10 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import coil3.Image
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -19,40 +22,40 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * Create a [ZoomableState] that is remembered across compositions.
+ * Create a [CroppableState] that is remembered across compositions.
  *
  * Changes to the provided values for [minScale] and [maxScale] will **not** result
  * in the state being recreated or changed in any way if it has already been created.
  *
- * @param minScale the minimum scale value for [ZoomableState.minScale]
- * @param maxScale the maximum scale value for [ZoomableState.maxScale]
+ * @param minScale the minimum scale value for [CroppableState.minScale]
+ * @param maxScale the maximum scale value for [CroppableState.maxScale]
  */
 @Composable
-fun rememberZoomableState(
+fun rememberCroppableState(
     @FloatRange(from = 0.0) minScale: Float = 1f,
     @FloatRange(from = 0.0) maxScale: Float = Float.MAX_VALUE,
-): ZoomableState = rememberSaveable(
-    saver = ZoomableState.Saver
+): CroppableState = rememberSaveable(
+    saver = CroppableState.Saver
 ) {
-    ZoomableState(
+    CroppableState(
         minScale = minScale,
         maxScale = maxScale,
     )
 }
 
 /**
- * A state object that can be hoisted to observe scale and translate for [Zoomable].
+ * A state object that can be hoisted to observe scale and translate for [Croppable].
  *
- * In most cases, this will be created via [rememberZoomableState].
+ * In most cases, this will be created via [rememberCroppableState].
  *
- * @param minScale the minimum scale value for [ZoomableState.minScale]
- * @param maxScale the maximum scale value for [ZoomableState.maxScale]
- * @param initialTranslateX the initial translateX value for [ZoomableState.translateX]
- * @param initialTranslateY the initial translateY value for [ZoomableState.translateY]
- * @param initialScale the initial scale value for [ZoomableState.scale]
+ * @param minScale the minimum scale value for [CroppableState.minScale]
+ * @param maxScale the maximum scale value for [CroppableState.maxScale]
+ * @param initialTranslateX the initial translateX value for [CroppableState.translateX]
+ * @param initialTranslateY the initial translateY value for [CroppableState.translateY]
+ * @param initialScale the initial scale value for [CroppableState.scale]
  */
 @Stable
-class ZoomableState(
+class CroppableState(
     @FloatRange(from = 0.0) val minScale: Float = 1f,
     @FloatRange(from = 0.0) val maxScale: Float = Float.MAX_VALUE,
     @FloatRange(from = 0.0) initialTranslateX: Float = 0f,
@@ -69,21 +72,21 @@ class ZoomableState(
     }
 
     /**
-     * The current scale value for [Zoomable]
+     * The current scale value for [Croppable]
      */
     @get:FloatRange(from = 0.0)
     val scale: Float
         get() = _scale.value
 
     /**
-     * The current translateY value for [Zoomable]
+     * The current translateY value for [Croppable]
      */
     @get:FloatRange(from = 0.0)
     val translateY: Float
         get() = _translateY.value
 
     /**
-     * The current translateX value for [Zoomable]
+     * The current translateX value for [Croppable]
      */
     @get:FloatRange(from = 0.0)
     val translateX: Float
@@ -93,14 +96,14 @@ class ZoomableState(
         get() = scale > minScale
 
     /**
-     * Instantly sets scale of [Zoomable] to given [scale]
+     * Instantly sets scale of [Croppable] to given [scale]
      */
     suspend fun snapScaleTo(scale: Float) = coroutineScope {
         _scale.snapTo(scale.coerceIn(minimumValue = minScale, maximumValue = maxScale))
     }
 
     /**
-     * Animates scale of [Zoomable] to given [scale]
+     * Animates scale of [Croppable] to given [scale]
      */
     suspend fun animateScaleTo(
         scale: Float,
@@ -149,7 +152,7 @@ class ZoomableState(
 
     internal suspend fun onZoomChange(zoomChange: Float) = snapScaleTo(scale * zoomChange)
 
-    override fun toString(): String = "ZoomableState(" +
+    override fun toString(): String = "CroppableState(" +
             "minScale=$minScale, " +
             "maxScale=$maxScale, " +
             "translateY=$translateY" +
@@ -265,9 +268,9 @@ class ZoomableState(
 
     companion object {
         /**
-         * The default [Saver] implementation for [ZoomableState].
+         * The default [Saver] implementation for [CroppableState].
          */
-        val Saver: Saver<ZoomableState, *> = listSaver(
+        val Saver: Saver<CroppableState, *> = listSaver(
             save = {
                 listOf(
                     it.translateX,
@@ -278,7 +281,7 @@ class ZoomableState(
                 )
             },
             restore = {
-                ZoomableState(
+                CroppableState(
                     initialTranslateX = it[0],
                     initialTranslateY = it[1],
                     initialScale = it[2],
@@ -286,6 +289,20 @@ class ZoomableState(
                     maxScale = it[4],
                 )
             }
+        )
+    }
+}
+
+class CropHint(
+    val backgroundColor: Color,
+    val borderColor: Color,
+    val borderWidth: Dp,
+){
+    companion object{
+        val Default = CropHint(
+            backgroundColor = Color(0xFFBABABA),
+            borderColor = Color(0xFFBABABA),
+            borderWidth = 2.dp,
         )
     }
 }

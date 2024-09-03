@@ -24,6 +24,9 @@ import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.util.DebugLogger
+import io.keeppro.CropHint
+import io.keeppro.Croppable
+import io.keeppro.rememberCroppableState
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 
@@ -32,7 +35,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 fun App() {
     MaterialTheme {
 
-        val zoomableState = rememberZoomableState()
+        val croppableState = rememberCroppableState()
 
         var newImage by remember { mutableStateOf<ByteArray?>(null) }
 
@@ -42,7 +45,7 @@ fun App() {
             .components {
                 add { chain ->
                     val response = chain.proceed()
-                    zoomableState.prepareImage(response.image)
+                    croppableState.prepareImage(response.image)
                     response
                 }
             }
@@ -53,8 +56,8 @@ fun App() {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxSize()
             ) {
-            Zoomable(
-                state = zoomableState,
+            Croppable(
+                state = croppableState,
                 cropHint = CropHint.Default,
                 modifier = Modifier.size(300.dp).aspectRatio(1f)
             ) {
@@ -70,7 +73,7 @@ fun App() {
             Button(
                 modifier = Modifier.padding(16.dp),
                 onClick = {
-                newImage = zoomableState.crop()
+                newImage = croppableState.crop()
             }) {
                 Text("Crop")
             }

@@ -1,9 +1,7 @@
-package io.keeppro.krop
+package io.keeppro
 
 import coil3.Bitmap
 import coil3.Image
-import coil3.PlatformContext
-import coil3.request.ImageRequest
 import coil3.toBitmap
 
 class Krop {
@@ -21,6 +19,5 @@ class Krop {
     }
 }
 
-internal expect fun cropBitmap(bitmap: Bitmap, x: Int, y: Int, width: Int, height: Int): ByteArray
+expect fun cropBitmap(bitmap: Bitmap, x: Int, y: Int, width: Int, height: Int): ByteArray
 
-internal expect fun getImageRequest(context: PlatformContext, url: String): ImageRequest
