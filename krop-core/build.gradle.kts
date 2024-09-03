@@ -12,7 +12,7 @@ plugins {
 }
 //for publishToMavenLocal, can check ~/.m2 to find build artifacts
 group = "io.keeppro"
-version = "1.0.3"
+version = "1.0.0"
 
 kotlin {
     js(IR) {
