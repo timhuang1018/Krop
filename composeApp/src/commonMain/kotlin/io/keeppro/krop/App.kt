@@ -34,21 +34,13 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Preview
 fun App() {
     MaterialTheme {
-
-        val croppableState = rememberCroppableState()
+        val croppableState = rememberCroppableState(contentScale = ContentScale.Crop)
 
         var newImage by remember { mutableStateOf<ByteArray?>(null) }
 
-        val imageRequest = getImageRequest(LocalPlatformContext.current, "https://picsum.photos/id/237/800/1200")
+        val imageRequest = getImageRequest(LocalPlatformContext.current, "https://picsum.photos/id/237/1600/2400")
         val loader = ImageLoader.Builder(LocalPlatformContext.current)
             .logger(DebugLogger())
-            .components {
-                add { chain ->
-                    val response = chain.proceed()
-                    croppableState.prepareImage(response.image)
-                    response
-                }
-            }
             .build()
 
         Column(
@@ -59,13 +51,14 @@ fun App() {
             Croppable(
                 state = croppableState,
                 cropHint = CropHint.Default,
-                modifier = Modifier.size(300.dp).aspectRatio(1f)
+                modifier = Modifier.size(300.dp).aspectRatio(1f),
             ) {
                 AsyncImage(
                     model = imageRequest,
                     contentDescription = null,
                     imageLoader = loader,
-                    contentScale = ContentScale.Inside
+                    contentScale = ContentScale.Inside,
+                    onSuccess = { croppableState.prepareImage(it.result.image) },
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))

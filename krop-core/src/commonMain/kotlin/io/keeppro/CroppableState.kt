@@ -3,6 +3,7 @@ package io.keeppro
 import androidx.annotation.FloatRange
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Composable
@@ -13,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.Image
@@ -34,12 +36,14 @@ import kotlin.math.min
 fun rememberCroppableState(
     @FloatRange(from = 0.0) minScale: Float = 1f,
     @FloatRange(from = 0.0) maxScale: Float = Float.MAX_VALUE,
+    contentScale: ContentScale = ContentScale.Fit,
 ): CroppableState = rememberSaveable(
     saver = CroppableState.Saver
 ) {
     CroppableState(
         minScale = minScale,
         maxScale = maxScale,
+        contentScale = contentScale
     )
 }
 
@@ -61,11 +65,21 @@ class CroppableState(
     @FloatRange(from = 0.0) initialTranslateX: Float = 0f,
     @FloatRange(from = 0.0) initialTranslateY: Float = 0f,
     @FloatRange(from = 0.0) initialScale: Float = minScale,
+    private val contentScale: ContentScale = ContentScale.Fit,
 ) {
     private val velocityTracker = VelocityTracker()
     private val _translateY = Animatable(initialTranslateY)
     private val _translateX = Animatable(initialTranslateX)
-    private val _scale = Animatable(initialScale)
+    private val _scale: Animatable<Float, AnimationVector1D> = Animatable(initialScale)
+
+    private val krop = Krop()
+    private var containerWidth = 0
+    private var containerHeight = 0
+    private var childWidth = 0
+    private var childHeight = 0
+    private var startPoint = Offset(0f, 0f)
+    private var cropArea = Offset(0f, 0f) //width and height
+    private var updateChildScale: Float? = null
 
     init {
         require(minScale < maxScale) { "minScale must be < maxScale" }
@@ -160,15 +174,7 @@ class CroppableState(
             "scale=$scale" +
             ")"
 
-    private val krop = Krop()
-    private var containerWidth = 0
-    private var containerHeight = 0
-    private var childWidth = 0
-    private var childHeight = 0
-    private var startPoint = Offset(0f, 0f)
-    private var cropArea = Offset(0f, 0f) //width and height
-
-    fun updateContainerAndChildSize(
+    suspend fun updateContainerAndChildSize(
         maxWidth: Int,
         maxHeight: Int,
         childWidth: Int,
@@ -178,10 +184,28 @@ class CroppableState(
         containerHeight = maxHeight
         this.childWidth = childWidth
         this.childHeight = childHeight
-        calculateCropArea()
+
+        val updatedScaled = when (contentScale) {
+            ContentScale.Crop -> maxOf(
+                containerWidth / childWidth.toFloat(),
+                containerHeight / childHeight.toFloat()
+            )
+            ContentScale.Fit -> minOf(
+                containerWidth / childWidth.toFloat(),
+                containerHeight / childHeight.toFloat()
+            )
+            ContentScale.FillHeight -> containerHeight / childHeight.toFloat()
+            ContentScale.FillWidth -> containerWidth / childWidth.toFloat()
+            else -> 1f
+        }
+        if (updateChildScale == null || updateChildScale != updatedScaled) { //child size might cha
+            // nged, only update once for image load and initial each time
+            snapScaleTo(updatedScaled)
+            updateChildScale = updatedScaled
+        }
     }
 
-    private fun calculateCropArea() {
+    fun calculateCropArea() {
         startPoint = Offset(
             (max(0f, (childWidth * scale - containerWidth) / 2) - translateX).coerceAtLeast(0f),
             (max(0f, (childHeight * scale - containerHeight) / 2) - translateY).coerceAtLeast(0f)
@@ -200,7 +224,7 @@ class CroppableState(
         return krop.crop(startX, startY, width, height)
     }
 
-    fun prepareImage(image: Image?) {
+    fun prepareImage(image: Image) {
         krop.prepareImage(image)
     }
 
