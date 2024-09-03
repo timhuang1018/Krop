@@ -1,4 +1,4 @@
-package io.keeppro.krop
+package io.keeppro
 
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.updateTransition
@@ -20,17 +20,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 /**
- * A zoomable layout that can handle zoom in and out with drag support.
+ * A croppable and zoomable layout that can handle zoom in and out with drag support, and crop image.
  *
- * @param state the state object to be used to observe the [Zoomable] state.
+ * @param state the state object to be used to observe the [Croppable] state.
  * @param modifier the modifier to apply to this layout.
  * @param doubleTapScale a function called on double tap gesture, will scale to returned value.
  * @param content a block which describes the content.
@@ -38,8 +35,8 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun Zoomable(
-    state: ZoomableState,
+fun Croppable(
+    state: CroppableState,
     modifier: Modifier = Modifier,
     enable: Boolean = true,
     onTap: (() -> Unit)? = null,
@@ -154,16 +151,3 @@ fun Zoomable(
 
 }
 
-class CropHint(
-    val backgroundColor: Color,
-    val borderColor: Color,
-    val borderWidth: Dp,
-){
-    companion object{
-        val Default = CropHint(
-            backgroundColor = Color(0xFFBABABA),
-            borderColor = Color(0xFFBABABA),
-            borderWidth = 2.dp,
-        )
-    }
-}
