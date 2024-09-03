@@ -28,5 +28,5 @@ dependencyResolutionManagement {
     }
 }
 
-include(":composeApp")
+include(":sample-multiplatform")
 include(":krop-core")
