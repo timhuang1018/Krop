@@ -18,6 +18,14 @@ With **Krop**, you can seamlessly integrate image cropping functionality into yo
 - **Customizable:** Tailor the cropping experience to fit your application's specific requirements with flexible customization options.
 - **Compose-based:** Benefit from a modern UI framework, enabling reactive and declarative UIs across all targets.
 
+## Version Compatibility
+
+The table below outlines the compatibility between different versions of the **Krop** library, Kotlin, and Coil. This ensures you can easily find the correct versions to use together in your project.
+
+| **Krop Version** | **Kotlin Version** | **Coil Version**         |
+|------------------|--------------------|--------------------------|
+| 1.0.x            | 2.0.10+            | 3.0.0-alpha05+           |
+
 ## Features
 
 - **Cross-platform Image Cropping:** Use a unified API to crop images across multiple platforms.
