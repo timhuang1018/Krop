@@ -65,7 +65,7 @@ val croppableState = rememberCroppableState(contentScale = ContentScale.Crop)
 ```
 
 Then you can call `croppableState.crop()` to get the cropped image.
-`CroppableState` is also responsible for setting ContentScale, beware that you have to set AsyncImage `ContentScale.Inside` to make things work. 
+`CroppableState` is also responsible for setting ContentScale, beware that you have to set AsyncImage `ContentScale.Inside` to make things work. And set the expected image size(width, height) at `Croppable`. 
 You can also customize the cropping area by setting the aspect ratio to `Croppable`, or enabling tap and scale of doubleTap and more.
 
 ### Example Project
