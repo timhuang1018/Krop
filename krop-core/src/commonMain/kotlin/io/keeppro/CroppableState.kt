@@ -114,7 +114,6 @@ class CroppableState(
      * Instantly sets scale of [Croppable] to given [scale]
      */
     suspend fun snapScaleTo(scale: Float) = coroutineScope {
-        println("snapScaleTo: $scale")
         _scale.snapTo(scale.coerceIn(minimumValue = minScale, maximumValue = maxScale))
     }
 
@@ -160,10 +159,17 @@ class CroppableState(
         }
     }
 
-    internal suspend fun updateBounds(maxX: Float, maxY: Float) = coroutineScope {
+    internal suspend fun updateBounds() = coroutineScope {
+        val (maxX: Float, maxY: Float) = getBounds()
         if (maxX.isNaN() || maxY.isNaN()) return@coroutineScope
         _translateY.updateBounds(-maxY, maxY)
         _translateX.updateBounds(-maxX, maxX)
+    }
+
+    fun getBounds(): Pair<Float, Float> { //return boundary for translationX,Y
+        val (maxX, maxY) = (childWidth * scale - containerWidth).coerceAtLeast(0F) / 2F to
+                (childHeight * scale - containerHeight).coerceAtLeast(0F) / 2F
+        return maxX to maxY
     }
 
     internal suspend fun onZoomChange(zoomChange: Float) = snapScaleTo(scale * zoomChange)
@@ -182,7 +188,6 @@ class CroppableState(
         childWidth: Int,
         childHeight: Int
     ) {
-        println("containerWidth: $containerWidth, containerHeight: $containerHeight, childWidth: $childWidth, childHeight: $childHeight")
         containerWidth = maxWidth
         containerHeight = maxHeight
         this.childWidth = childWidth
@@ -208,7 +213,6 @@ class CroppableState(
             min(childWidth * scale, containerWidth.toFloat()),
             min(childHeight * scale, containerHeight.toFloat())
         )
-        println("startPoint: $startPoint, cropArea(width, height): $cropArea")
     }
 
     fun crop(): ByteArray {
@@ -217,8 +221,6 @@ class CroppableState(
         val startY = (originFrameRatio * startPoint.y / scale).toInt()
         val width = (originFrameRatio * cropArea.x / scale).toInt()
         val height = (originFrameRatio * cropArea.y / scale).toInt()
-        println("containerWidth: $containerWidth, containerHeight: $containerHeight, childWidth: $childWidth, childHeight: $childHeight")
-        println("crop: startX: $startX, startY: $startY, width: $width, height: $height, scale: $scale")
         return krop.crop(startX, startY, width, height)
     }
 
