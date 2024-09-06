@@ -28,7 +28,7 @@ The table below outlines the compatibility between different versions of the **K
 
 ## Features
 
-- **Cross-platform Image Cropping:** Use a unified API to crop images across multiple platforms.
+- **Cross-platform Image Cropping:** Use a unified API to crop images across multiple platforms. Currently support image file `PNG`, `JPEG`
 - **Built on Coil:** Take advantage of Coil’s efficiency and ease of use for image loading.
 - **Compose Multiplatform Support:** Leverage the power of JetBrains Compose to create UIs that handle cropping interactions seamlessly.
 - **Customizability:** Fine-tune the cropping area, aspect ratio, and more, to suit the needs of your app.
