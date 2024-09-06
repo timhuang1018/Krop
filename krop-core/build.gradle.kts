@@ -12,7 +12,7 @@ plugins {
 }
 //for publishToMavenLocal, can check ~/.m2 to find build artifacts
 group = "io.keeppro"
-version = "1.0.0"
+version = "1.0.1"
 
 kotlin {
     js(IR) {
@@ -98,15 +98,15 @@ mavenPublishing {
     coordinates(
         groupId = "io.keeppro",
         artifactId = "krop",
-        version = "1.0.3"
+        version = "1.0.1"
     )
 
     // Configure POM metadata for the published artifact
     pom {
-        name.set("KMP Library for interacting with Cloudflare worker")
-        description.set("Kotlin multiplatform library for interacting with Cloudflare worker by building on top of ktor. Could used in target of Android, iOS, web, desktop. Helper functions to maximize speed to develop a MVP. Resources")
+        name.set("KMP Library for Cropping Images (Krop)")
+        description.set("Kotlin multiplatform library for cropping images by building on top of Coil. Can be used on Android, iOS, web, and desktop platforms. Easy to use and customize for image cropping in Compose Multiplatform applications.")
         inceptionYear.set("2024")
-        url.set("https://github.com/timhuang1018/ktor-cloudflare-worker")
+        url.set("https://github.com/timhuang1018/Krop")
 
         licenses {
             license {
@@ -115,7 +115,6 @@ mavenPublishing {
             }
         }
 
-        // Specify developer information
         developers {
             developer {
                 id.set("timhuang")
@@ -124,9 +123,8 @@ mavenPublishing {
             }
         }
 
-        // Specify SCM information
         scm {
-            url.set("https://github.com/timhuang1018/ktor-cloudflare-worker")
+            url.set("https://github.com/timhuang1018/Krop")
         }
     }
 
