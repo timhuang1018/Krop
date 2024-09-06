@@ -15,7 +15,6 @@ class Krop {
     fun crop(startX: Int, startY: Int, width: Int, height: Int): ByteArray {
         val current = image ?: throw IllegalStateException("Image is not loaded")
         if (current.width == -1 || current.height == -1) throw IllegalStateException("Image width or height is not available")
-        println("current image width: ${current.width}, height: ${current.height}")
         return cropBitmap(current.toBitmap(), startX, startY, width, height)
     }
 }

@@ -59,18 +59,11 @@ fun Croppable(
         var childWidth by remember { mutableStateOf(0) }
         var childHeight by remember { mutableStateOf(0) }
 
-        fun getBounds(updateScale: Float): Pair<Float, Float> { //return boundary for translationX,Y
-            return (childWidth * updateScale - constraints.maxWidth).coerceAtLeast(0F) / 2F to
-                    (childHeight * updateScale - constraints.maxHeight).coerceAtLeast(0F) / 2F
-        }
-
         LaunchedEffect(
             childHeight,
             childWidth,
         ) {
-            val (maxX, maxY) = getBounds(state.scale)
-            state.updateBounds(maxX, maxY)
-            state.updateContainerAndChildSize(constraints.maxWidth, constraints.maxHeight, childWidth, childHeight)
+
         }
 
         LaunchedEffect(
@@ -81,8 +74,6 @@ fun Croppable(
             constraints.maxHeight
         ) {
             // Update scale based on contentScale and dimensions
-            println("contentScale: $contentScale, constraint.maxWidth: ${constraints.maxWidth}, constraint.maxHeight: ${constraints.maxHeight}")
-            println("childWidth: $childWidth, childHeight: $childHeight")
             val updatedScale = when (contentScale) {
                 ContentScale.Crop -> maxOf(
                     constraints.maxWidth / childWidth.toFloat(),
@@ -97,6 +88,8 @@ fun Croppable(
                 else -> 1f
             }
             state.snapScaleTo(updatedScale)
+            state.updateContainerAndChildSize(constraints.maxWidth, constraints.maxHeight, childWidth, childHeight)
+            state.updateBounds()
         }
 
 
@@ -114,9 +107,8 @@ fun Croppable(
                                 val dis = Offset(-diffX, -diffY)
 
                                 val afterScale = doubleTapScale()
-                                val (maxX, maxY) = getBounds(afterScale)
-                                state.updateBounds(maxX, maxY)
                                 state.animateDoubleTap(scale = afterScale, distance = dis)
+                                state.updateBounds()
                             }
                         }
                     }
@@ -134,8 +126,7 @@ fun Croppable(
                     val adjustedOffset = centroid * scaleDifference
                     scope.launch {
                         state.onZoomChange(zoom)
-                        val (maxX, maxY) = getBounds(newScale)
-                        state.updateBounds(maxX, maxY)
+                        state.updateBounds()
                     }
 
                     scope.launch {
@@ -155,7 +146,6 @@ fun Croppable(
                     val placeable = measurable.measure(constraints = constraints)
                     childHeight = placeable.height
                     childWidth = placeable.width
-//                    println("constraints update : $constraints")
                     state.updateContainer(constraints.maxWidth, constraints.maxHeight)
                     layout(
                         width = constraints.maxWidth,
