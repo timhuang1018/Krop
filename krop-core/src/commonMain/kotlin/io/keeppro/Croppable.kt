@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import kotlinx.coroutines.launch
 
@@ -35,11 +36,12 @@ import kotlinx.coroutines.launch
 @Composable
 fun Croppable(
     state: CroppableState,
-    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Fit,
     enable: Boolean = true,
     onTap: (() -> Unit)? = null,
     doubleTapScale: (() -> Float)? = null,
     cropHint: CropHint? = null,
+    modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val transition = updateTransition(targetState = state, label = "")
@@ -56,6 +58,7 @@ fun Croppable(
     BoxWithConstraints(modifier = boxModifier) {
         var childWidth by remember { mutableStateOf(0) }
         var childHeight by remember { mutableStateOf(0) }
+
         fun getBounds(updateScale: Float): Pair<Float, Float> { //return boundary for translationX,Y
             return (childWidth * updateScale - constraints.maxWidth).coerceAtLeast(0F) / 2F to
                     (childHeight * updateScale - constraints.maxHeight).coerceAtLeast(0F) / 2F
@@ -69,6 +72,33 @@ fun Croppable(
             state.updateBounds(maxX, maxY)
             state.updateContainerAndChildSize(constraints.maxWidth, constraints.maxHeight, childWidth, childHeight)
         }
+
+        LaunchedEffect(
+            childHeight,
+            childWidth,
+            contentScale,
+            constraints.maxWidth,
+            constraints.maxHeight
+        ) {
+            // Update scale based on contentScale and dimensions
+            println("contentScale: $contentScale, constraint.maxWidth: ${constraints.maxWidth}, constraint.maxHeight: ${constraints.maxHeight}")
+            println("childWidth: $childWidth, childHeight: $childHeight")
+            val updatedScale = when (contentScale) {
+                ContentScale.Crop -> maxOf(
+                    constraints.maxWidth / childWidth.toFloat(),
+                    constraints.maxHeight / childHeight.toFloat()
+                )
+                ContentScale.Fit -> minOf(
+                    constraints.maxWidth / childWidth.toFloat(),
+                    constraints.maxHeight / childHeight.toFloat()
+                )
+                ContentScale.FillHeight -> constraints.maxHeight / childHeight.toFloat()
+                ContentScale.FillWidth -> constraints.maxWidth / childWidth.toFloat()
+                else -> 1f
+            }
+            state.snapScaleTo(updatedScale)
+        }
+
 
         val tapModifier = if (enable) {
             Modifier.pointerInput(Unit) {
@@ -125,6 +155,8 @@ fun Croppable(
                     val placeable = measurable.measure(constraints = constraints)
                     childHeight = placeable.height
                     childWidth = placeable.width
+//                    println("constraints update : $constraints")
+                    state.updateContainer(constraints.maxWidth, constraints.maxHeight)
                     layout(
                         width = constraints.maxWidth,
                         height = constraints.maxHeight

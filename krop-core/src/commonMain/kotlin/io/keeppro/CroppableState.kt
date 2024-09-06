@@ -80,6 +80,7 @@ class CroppableState(
     private var startPoint = Offset(0f, 0f)
     private var cropArea = Offset(0f, 0f) //width and height
     private var updateChildScale: Float? = null
+    private var originalImageWidth: Int = 0
 
     init {
         require(minScale < maxScale) { "minScale must be < maxScale" }
@@ -113,6 +114,7 @@ class CroppableState(
      * Instantly sets scale of [Croppable] to given [scale]
      */
     suspend fun snapScaleTo(scale: Float) = coroutineScope {
+        println("snapScaleTo: $scale")
         _scale.snapTo(scale.coerceIn(minimumValue = minScale, maximumValue = maxScale))
     }
 
@@ -174,38 +176,30 @@ class CroppableState(
             "scale=$scale" +
             ")"
 
-    suspend fun updateContainerAndChildSize(
+    fun updateContainerAndChildSize(
         maxWidth: Int,
         maxHeight: Int,
         childWidth: Int,
         childHeight: Int
     ) {
+        println("containerWidth: $containerWidth, containerHeight: $containerHeight, childWidth: $childWidth, childHeight: $childHeight")
         containerWidth = maxWidth
         containerHeight = maxHeight
         this.childWidth = childWidth
         this.childHeight = childHeight
 
-        val updatedScaled = when (contentScale) {
-            ContentScale.Crop -> maxOf(
-                containerWidth / childWidth.toFloat(),
-                containerHeight / childHeight.toFloat()
-            )
-            ContentScale.Fit -> minOf(
-                containerWidth / childWidth.toFloat(),
-                containerHeight / childHeight.toFloat()
-            )
-            ContentScale.FillHeight -> containerHeight / childHeight.toFloat()
-            ContentScale.FillWidth -> containerWidth / childWidth.toFloat()
-            else -> 1f
-        }
-        if (updateChildScale == null || updateChildScale != updatedScaled) { //child size might cha
-            // nged, only update once for image load and initial each time
-            snapScaleTo(updatedScaled)
-            updateChildScale = updatedScaled
-        }
+        calculateCropArea()
+    }
+
+    fun updateContainer(maxWidth: Int, maxHeight: Int) {
+        containerWidth = maxWidth
+        containerHeight = maxHeight
+        calculateCropArea()
     }
 
     fun calculateCropArea() {
+        val frameWidth: Float = if(originalImageWidth == childWidth) childWidth.toFloat() else originalImageWidth.toFloat()
+        val frameHeight: Float = if(originalImageWidth == childWidth) childHeight.toFloat() else childHeight * (originalImageWidth / childWidth.toFloat() )
         startPoint = Offset(
             (max(0f, (childWidth * scale - containerWidth) / 2) - translateX).coerceAtLeast(0f),
             (max(0f, (childHeight * scale - containerHeight) / 2) - translateY).coerceAtLeast(0f)
@@ -214,18 +208,24 @@ class CroppableState(
             min(childWidth * scale, containerWidth.toFloat()),
             min(childHeight * scale, containerHeight.toFloat())
         )
+        println("startPoint: $startPoint, cropArea(width, height): $cropArea")
     }
 
     fun crop(): ByteArray {
-        val startX = (startPoint.x / scale).toInt()
-        val startY = (startPoint.y / scale).toInt()
-        val width = (cropArea.x / scale).toInt()
-        val height = (cropArea.y / scale).toInt()
+        val originFrameRatio = originalImageWidth / childWidth.toFloat()
+        val startX = (originFrameRatio * startPoint.x / scale).toInt()
+        val startY = (originFrameRatio * startPoint.y / scale).toInt()
+        val width = (originFrameRatio * cropArea.x / scale).toInt()
+        val height = (originFrameRatio * cropArea.y / scale).toInt()
+        println("containerWidth: $containerWidth, containerHeight: $containerHeight, childWidth: $childWidth, childHeight: $childHeight")
+        println("crop: startX: $startX, startY: $startY, width: $width, height: $height, scale: $scale")
         return krop.crop(startX, startY, width, height)
     }
 
     fun prepareImage(image: Image) {
         krop.prepareImage(image)
+
+        originalImageWidth = image.width
     }
 
     internal fun addPosition(timeMillis: Long, position: Offset) {

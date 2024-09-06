@@ -1,5 +1,6 @@
 package io.keeppro.krop
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -26,6 +28,7 @@ import coil3.compose.LocalPlatformContext
 import coil3.util.DebugLogger
 import io.keeppro.CropHint
 import io.keeppro.Croppable
+import io.keeppro.CroppableState
 import io.keeppro.rememberCroppableState
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -39,77 +42,27 @@ fun App() {
         var newImage by remember { mutableStateOf<ByteArray?>(null) }
 
         var aspectRatio by remember { mutableStateOf(4f/3f) }
-        val size = 300.dp
-
-        val imageRequest = getImageRequest(LocalPlatformContext.current, "https://picsum.photos/id/237/1600/2400")
-        val loader = ImageLoader.Builder(LocalPlatformContext.current)
-            .logger(DebugLogger())
-            .build()
 
         Column(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxSize()
             ) {
-            Croppable(
-                state = croppableState,
-                cropHint = CropHint.Default,
-                modifier = Modifier
-                    .layout { measurable, constraints ->
-                    val newConstraints = if (aspectRatio >= 1f){
-                        constraints.copy(maxWidth = size.roundToPx(), maxHeight = (size.roundToPx() / aspectRatio).toInt())
-                    }else{
-                        constraints.copy(maxWidth = (size.roundToPx() * aspectRatio).toInt(), maxHeight = size.roundToPx())
-                    }
-                    val placeable = measurable.measure(newConstraints)
 
-                    layout(newConstraints.maxWidth, newConstraints.maxHeight){
-                        placeable.placeRelative(0, 0)
-                    }
-                }
-                ,
-            ) {
-                AsyncImage(
-                    model = imageRequest,
-                    contentDescription = null,
-                    imageLoader = loader,
-                    contentScale = ContentScale.Inside,
-                    onSuccess = { croppableState.prepareImage(it.result.image) },
-                )
-            }
+            CroppableSample(croppableState, aspectRatio)
+
             Spacer(modifier = Modifier.height(16.dp))
 
             //buttons to change aspect ratio to 1:1, 4:3, 16:9, 3:4, 9:16
-            Row {
-                Button(
-                    modifier = Modifier.padding(16.dp),
-                    onClick = { aspectRatio = 1f }
-                ) {
-                    Text("1:1")
-                }
-                Button(
-                    modifier = Modifier.padding(16.dp),
-                    onClick = { aspectRatio = 4f / 3f }
-                ) {
-                    Text("4:3")
-                }
-                Button(
-                    modifier = Modifier.padding(16.dp),
-                    onClick = { aspectRatio = 16f / 9f }
-                ) {
-                    Text("16:9")
-                }
-                Button(
-                    modifier = Modifier.padding(16.dp),
-                    onClick = { aspectRatio = 3f / 4f }
-                ) {
-                    Text("3:4")
-                }
-                Button(
-                    modifier = Modifier.padding(16.dp),
-                    onClick = { aspectRatio = 9f / 16f }
-                ) {
-                    Text("9:16")
+            Row (modifier = Modifier.horizontalScroll(rememberScrollState())) {
+
+                listOfAspectRatios.forEach {
+                    Button(
+                        modifier = Modifier.padding(16.dp),
+                        onClick = { aspectRatio = it.aspectRatio }
+                    ) {
+                        Text(it.text)
+                    }
                 }
             }
 
@@ -135,5 +88,59 @@ fun App() {
     }
 
 }
+
+@Composable
+fun CroppableSample(croppableState: CroppableState, aspectRatio: Float) {
+    val size = 300.dp
+
+    val imageRequest = getImageRequest(LocalPlatformContext.current, "https://picsum.photos/id/237/1600/2400")
+    val loader = ImageLoader.Builder(LocalPlatformContext.current)
+        .logger(DebugLogger())
+        .build()
+
+    Croppable(
+        state = croppableState,
+        contentScale = ContentScale.Crop,
+        cropHint = CropHint.Default,
+        modifier = Modifier
+            .layout { measurable, constraints ->
+                val newConstraints = if (aspectRatio >= 1f){
+                    constraints.copy(maxWidth = size.roundToPx(), maxHeight = (size.roundToPx() / aspectRatio).toInt())
+                }else{
+                    constraints.copy(maxWidth = (size.roundToPx() * aspectRatio).toInt(), maxHeight = size.roundToPx())
+                }
+                val placeable = measurable.measure(newConstraints)
+
+                layout(newConstraints.maxWidth, newConstraints.maxHeight){
+                    placeable.placeRelative(0, 0)
+                }
+            }
+        ,
+    ) {
+        AsyncImage(
+            model = imageRequest,
+            contentDescription = null,
+            imageLoader = loader,
+            contentScale = ContentScale.Inside,
+            onSuccess = {
+                io.keeppro.krop.println("image width: ${it.result.image.width}, image height: ${it.result.image.height}")
+                croppableState.prepareImage(it.result.image)
+            },
+        )
+    }
+}
+
+private class AspectRatioButton(
+    val text: String,
+    val aspectRatio: Float,
+)
+
+private val listOfAspectRatios = listOf(
+    AspectRatioButton("1:1", 1f),
+    AspectRatioButton("4:3", 4f / 3f),
+    AspectRatioButton("16:9", 16f / 9f),
+    AspectRatioButton("3:4", 3f / 4f),
+    AspectRatioButton("9:16", 9f / 16f),
+)
 
 
