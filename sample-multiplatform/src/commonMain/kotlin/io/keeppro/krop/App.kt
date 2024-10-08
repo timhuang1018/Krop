@@ -123,7 +123,6 @@ fun CroppableSample(croppableState: CroppableState, aspectRatio: Float) {
             imageLoader = loader,
             contentScale = ContentScale.Inside,
             onSuccess = {
-                io.keeppro.krop.println("image width: ${it.result.image.width}, image height: ${it.result.image.height}")
                 croppableState.prepareImage(it.result.image)
             },
         )

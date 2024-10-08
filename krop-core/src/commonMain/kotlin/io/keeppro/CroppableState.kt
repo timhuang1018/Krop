@@ -7,11 +7,15 @@ import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.ContentScale
@@ -79,8 +83,11 @@ class CroppableState(
     private var childHeight = 0
     private var startPoint = Offset(0f, 0f)
     private var cropArea = Offset(0f, 0f) //width and height
-    private var updateChildScale: Float? = null
     private var originalImageWidth: Int = 0
+    /**
+     * The window of the crop area from user's perspective
+     */
+    val cropWindow: MutableState<Rect> = mutableStateOf(Rect(0f, 0f, 0f, 0f))
 
     init {
         require(minScale < maxScale) { "minScale must be < maxScale" }
@@ -212,6 +219,17 @@ class CroppableState(
         cropArea = Offset(
             min(childWidth * scale, containerWidth.toFloat()),
             min(childHeight * scale, containerHeight.toFloat())
+        )
+
+        cropWindow.value = Rect(
+            offset = Offset(
+                if(childWidth * scale < containerWidth.toFloat()) (childWidth * scale - containerWidth) / 2 else 0f,
+                if (childHeight * scale < containerHeight.toFloat()) (childHeight * scale - containerHeight) / 2 else 0f,
+            ),
+            size = Size(
+                cropArea.x,
+                cropArea.y
+            )
         )
     }
 

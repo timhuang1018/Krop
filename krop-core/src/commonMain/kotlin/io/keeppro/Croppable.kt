@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
@@ -49,6 +50,8 @@ fun Croppable(
     val settingTranslationX by transition.animateFloat(label = "") { it.translateX }
     val settingTranslationY by transition.animateFloat(label = "") { it.translateY }
     val scope = rememberCoroutineScope()
+    val cropWindow: Rect by state.cropWindow
+
 
     val boxModifier = if (cropHint != null) {
         modifier.border(cropHint.borderWidth, cropHint.borderColor).background(cropHint.backgroundColor)
@@ -58,13 +61,6 @@ fun Croppable(
     BoxWithConstraints(modifier = boxModifier) {
         var childWidth by remember { mutableStateOf(0) }
         var childHeight by remember { mutableStateOf(0) }
-
-        LaunchedEffect(
-            childHeight,
-            childWidth,
-        ) {
-
-        }
 
         LaunchedEffect(
             childHeight,
@@ -167,6 +163,20 @@ fun Croppable(
         ) {
             content.invoke(this)
         }
+        SudokuGrid(modifier = Modifier.layout { measurable, constraints ->
+            val placeable = measurable.measure(constraints = constraints.copy(
+                maxWidth = cropWindow.width.toInt(),
+                maxHeight = cropWindow.height.toInt(),
+                minWidth = cropWindow.width.toInt(),
+                minHeight = cropWindow.height.toInt()
+            ))
+            layout(
+                width = cropWindow.width.toInt(),
+                height = cropWindow.height.toInt()
+            ) {
+                placeable.place((- cropWindow.topLeft.x.toInt()), (- cropWindow.topLeft.y.toInt()))
+            }
+        })
     }
 
 }
