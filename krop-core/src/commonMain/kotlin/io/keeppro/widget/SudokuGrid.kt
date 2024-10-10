@@ -1,4 +1,4 @@
-package io.keeppro
+package io.keeppro.widget
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.BoxScope

@@ -341,7 +341,7 @@ data class CropHint(
     val backgroundColor: Color,
     val borderColor: Color,
     val borderWidth: Dp,
-    val gridLineColor: Color?
+    val gridLineColor: Color
 ){
 
     companion object{
