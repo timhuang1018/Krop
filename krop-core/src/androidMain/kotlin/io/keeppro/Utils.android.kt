@@ -6,7 +6,6 @@ import java.io.ByteArrayOutputStream
 typealias Bitmap = android.graphics.Bitmap
 
 actual fun cropBitmap(bitmap: Bitmap, x: Int, y: Int, width: Int, height: Int): ByteArray {
-    println("cropBitmap, x: $x, y: $y, width: $width, height: $height")
     val cropBitmap = Bitmap.createBitmap(bitmap, x, y, width, height)
 
     val format = android.graphics.Bitmap.CompressFormat.PNG

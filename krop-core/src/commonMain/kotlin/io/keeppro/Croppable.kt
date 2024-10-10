@@ -22,6 +22,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
+import io.keeppro.widget.CropHintWindow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 /**
@@ -49,22 +51,17 @@ fun Croppable(
     val settingTranslationX by transition.animateFloat(label = "") { it.translateX }
     val settingTranslationY by transition.animateFloat(label = "") { it.translateY }
     val scope = rememberCoroutineScope()
+    val windowStateFlow = remember { MutableStateFlow(false) }
+
 
     val boxModifier = if (cropHint != null) {
         modifier.border(cropHint.borderWidth, cropHint.borderColor).background(cropHint.backgroundColor)
     } else {
         modifier
-    }.clipToBounds()
-    BoxWithConstraints(modifier = boxModifier) {
+    }
+    BoxWithConstraints(modifier = boxModifier.clipToBounds()) {
         var childWidth by remember { mutableStateOf(0) }
         var childHeight by remember { mutableStateOf(0) }
-
-        LaunchedEffect(
-            childHeight,
-            childWidth,
-        ) {
-
-        }
 
         LaunchedEffect(
             childHeight,
@@ -131,6 +128,7 @@ fun Croppable(
 
                     scope.launch {
                         state.drag(pan - adjustedOffset)
+                        windowStateFlow.value = true
                     }
                 }
             }
@@ -166,6 +164,14 @@ fun Croppable(
                 }
         ) {
             content.invoke(this)
+        }
+
+        if (cropHint != null){
+            CropHintWindow(
+                cropHint.gridLineColor,
+                state.cropWindow.value,
+                windowStateFlow,
+            )
         }
     }
 

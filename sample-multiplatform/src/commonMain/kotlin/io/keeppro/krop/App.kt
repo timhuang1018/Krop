@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.dp
@@ -101,7 +102,7 @@ fun CroppableSample(croppableState: CroppableState, aspectRatio: Float) {
     Croppable(
         state = croppableState,
         contentScale = ContentScale.Crop,
-        cropHint = CropHint.Default,
+        cropHint = CropHint.Default.copy(gridLineColor = Color.White.copy(alpha = 0.3f)),
         modifier = Modifier
             .layout { measurable, constraints ->
                 val newConstraints = if (aspectRatio >= 1f){
@@ -123,7 +124,6 @@ fun CroppableSample(croppableState: CroppableState, aspectRatio: Float) {
             imageLoader = loader,
             contentScale = ContentScale.Inside,
             onSuccess = {
-                io.keeppro.krop.println("image width: ${it.result.image.width}, image height: ${it.result.image.height}")
                 croppableState.prepareImage(it.result.image)
             },
         )

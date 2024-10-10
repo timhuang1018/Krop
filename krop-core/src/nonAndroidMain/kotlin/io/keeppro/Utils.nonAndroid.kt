@@ -9,7 +9,6 @@ import org.jetbrains.skia.ImageInfo
 
 //1. bytearray
 actual fun cropBitmap(bitmap: Bitmap, x: Int, y: Int, width: Int, height: Int): ByteArray {
-    println("cropBitmap, x: $x, y: $y, width: $width, height: $height")
     val croppedBitmap = cropIntoBitmap(bitmap, x, y, width, height)
 
     // Convert the cropped bitmap to an Image
