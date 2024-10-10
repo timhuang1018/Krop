@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun BoxScope.SudokuGrid(modifier: Modifier = Modifier) {
+fun BoxScope.SudokuGrid(gridLineColor: Color, modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
         val gridSize = 3 // For a 3x3 grid
         val lineThickness = 2.dp.toPx()
@@ -22,14 +22,14 @@ fun BoxScope.SudokuGrid(modifier: Modifier = Modifier) {
             val y = i * cellSizeY
             if (i < gridSize) {
                 drawLine(
-                    color = Color.Black,
+                    color = gridLineColor,
                     start = Offset(x, 0f),
                     end = Offset(x, size.height),
                     strokeWidth = lineThickness
                 )
             }
             drawLine(
-                color = Color.Black,
+                color = gridLineColor,
                 start = Offset(0f, y),
                 end = Offset(size.width, y),
                 strokeWidth = lineThickness

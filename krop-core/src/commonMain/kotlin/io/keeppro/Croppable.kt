@@ -1,7 +1,10 @@
 package io.keeppro
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -20,10 +23,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * A croppable and zoomable layout that can handle zoom in and out with drag support, and crop image.
@@ -51,14 +61,36 @@ fun Croppable(
     val settingTranslationY by transition.animateFloat(label = "") { it.translateY }
     val scope = rememberCoroutineScope()
     val cropWindow: Rect by state.cropWindow
+    var cropWindowVisible by remember { mutableStateOf(false) }
+    val windowStateFlow = remember { MutableStateFlow(false) }
+    var delayJob by remember { mutableStateOf<Job?>(null) }
+
+    LaunchedEffect(Unit){
+        windowStateFlow.collectLatest {
+            cropWindowVisible = it
+            if(it){
+                delayJob?.cancel()
+                delayJob = scope.launch {
+                    delay(1500)
+                    withContext(Dispatchers.Main){
+                        windowStateFlow.value = false
+                    }
+                }
+            }else{
+                delayJob?.cancel()
+                delayJob = null
+            }
+        }
+    }
+
 
 
     val boxModifier = if (cropHint != null) {
         modifier.border(cropHint.borderWidth, cropHint.borderColor).background(cropHint.backgroundColor)
     } else {
         modifier
-    }.clipToBounds()
-    BoxWithConstraints(modifier = boxModifier) {
+    }
+    BoxWithConstraints(modifier = boxModifier.clipToBounds()) {
         var childWidth by remember { mutableStateOf(0) }
         var childHeight by remember { mutableStateOf(0) }
 
@@ -127,6 +159,7 @@ fun Croppable(
 
                     scope.launch {
                         state.drag(pan - adjustedOffset)
+                        windowStateFlow.value = true
                     }
                 }
             }
@@ -163,20 +196,29 @@ fun Croppable(
         ) {
             content.invoke(this)
         }
-        SudokuGrid(modifier = Modifier.layout { measurable, constraints ->
-            val placeable = measurable.measure(constraints = constraints.copy(
-                maxWidth = cropWindow.width.toInt(),
-                maxHeight = cropWindow.height.toInt(),
-                minWidth = cropWindow.width.toInt(),
-                minHeight = cropWindow.height.toInt()
-            ))
-            layout(
-                width = cropWindow.width.toInt(),
-                height = cropWindow.height.toInt()
-            ) {
-                placeable.place((- cropWindow.topLeft.x.toInt()), (- cropWindow.topLeft.y.toInt()))
-            }
-        })
+
+        AnimatedVisibility(
+            visible = cropWindowVisible,
+            enter = EnterTransition.None,
+            exit = fadeOut()
+            ){
+            SudokuGrid(
+                gridLineColor = cropHint?.gridLineColor ?: Color.Black,
+                modifier = Modifier.layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints = constraints.copy(
+                    maxWidth = cropWindow.width.toInt(),
+                    maxHeight = cropWindow.height.toInt(),
+                    minWidth = cropWindow.width.toInt(),
+                    minHeight = cropWindow.height.toInt()
+                ))
+                layout(
+                    width = cropWindow.width.toInt(),
+                    height = cropWindow.height.toInt()
+                ) {
+                    placeable.place((- cropWindow.topLeft.x.toInt()), (- cropWindow.topLeft.y.toInt()))
+                }
+            })
+        }
     }
 
 }

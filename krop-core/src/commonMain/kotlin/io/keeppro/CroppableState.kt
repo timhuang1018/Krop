@@ -337,16 +337,19 @@ class CroppableState(
     }
 }
 
-class CropHint(
+data class CropHint(
     val backgroundColor: Color,
     val borderColor: Color,
     val borderWidth: Dp,
+    val gridLineColor: Color?
 ){
+
     companion object{
         val Default = CropHint(
             backgroundColor = Color(0xFFBABABA),
             borderColor = Color(0xFFBABABA),
             borderWidth = 2.dp,
+            gridLineColor = Color.Black,
         )
     }
 }
