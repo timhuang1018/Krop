@@ -40,7 +40,7 @@ The table below outlines the compatibility between different versions of the **K
 Add the following dependency to your `build.gradle.kts`, supporting Android, iOS, web, and desktop:
 
 ```kotlin
-implementation("io.keeppro.krop:krop:1.0.1")
+implementation("io.keeppro.krop:krop:1.0.2")
 ```
 
 ### Usage
@@ -86,3 +86,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 This library is already powering production applications! Check out [KeepPro](https://keeppro.io), a queue management app built using `Krop` to gain simple cropping feature.
 
 If you're using **Krop** in your project, we'd love to hear from you! Feel free to open a PR and add your app to this showcase.
+
+```
+<img src="./assets/example.gif" alt="Krop Demo GIF" width="500"/>
+```
