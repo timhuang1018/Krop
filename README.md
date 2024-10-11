@@ -87,4 +87,4 @@ This library is already powering production applications! Check out [KeepPro](ht
 
 If you're using **Krop** in your project, we'd love to hear from you! Feel free to open a PR and add your app to this showcase.
 
-<img src="./assets/example.gif" alt="Krop Demo GIF" width="500"/>
+<img src="./assets/example.gif" alt="Krop Demo GIF" width="250"/>
