@@ -40,7 +40,7 @@ The table below outlines the compatibility between different versions of the **K
 Add the following dependency to your `build.gradle.kts`, supporting Android, iOS, web, and desktop:
 
 ```kotlin
-implementation("io.keeppro.krop:krop:1.0.2")
+implementation("io.keeppro.krop:krop:1.0.5")
 ```
 
 ### Usage

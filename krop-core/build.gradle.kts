@@ -12,7 +12,7 @@ plugins {
 }
 //for publishToMavenLocal, can check ~/.m2 to find build artifacts
 group = "io.keeppro"
-version = "1.0.2"
+version = "1.0.5"
 
 kotlin {
     js(IR) {
@@ -98,7 +98,7 @@ mavenPublishing {
     coordinates(
         groupId = "io.keeppro",
         artifactId = "krop",
-        version = "1.0.2"
+        version = "1.0.5"
     )
 
     // Configure POM metadata for the published artifact
